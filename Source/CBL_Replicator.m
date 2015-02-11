@@ -417,6 +417,15 @@ NSString* CBL_ReplicatorStoppedNotification = @"CBL_ReplicatorStopped";
     [self checkSession];
 }
 
+- (void) retryAfterDelay {
+    LogTo(SyncVerbose, @"%@: Issue a retryAfterDelay; will retry in %g sec", self, kRetryDelay);
+    [NSObject cancelPreviousPerformRequestsWithTarget: self
+                                             selector: @selector(retryIfReady)
+                                               object: nil];
+    [self performSelector: @selector(retryIfReady)
+               withObject: nil afterDelay: kRetryDelay];
+}
+
 - (void) retryIfReady {
     if (!_running || !_error)
         return;
@@ -428,7 +437,7 @@ NSString* CBL_ReplicatorStoppedNotification = @"CBL_ReplicatorStopped";
                                                  selector: @selector(retryIfReady) object: nil];
         [self retry];
     } else {
-        [self performSelector: @selector(retryIfReady) withObject: nil afterDelay: kRetryDelay];
+        [self retryAfterDelay];
     }
 }
 
@@ -522,11 +531,7 @@ NSString* CBL_ReplicatorStoppedNotification = @"CBL_ReplicatorStopped";
             } else if (_error) /*(_revisionsFailed > 0)*/ {
                 LogTo(Sync, @"%@: Failed to xfer %u revisions; will retry in %g sec",
                       self, _revisionsFailed, kRetryDelay);
-                [NSObject cancelPreviousPerformRequestsWithTarget: self
-                                                         selector: @selector(retryIfReady)
-                                                           object: nil];
-                [self performSelector: @selector(retryIfReady)
-                           withObject: nil afterDelay: kRetryDelay];
+                [self retryAfterDelay];
             }
         }
     }

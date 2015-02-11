@@ -269,9 +269,13 @@ static NSString* joinQuotedEscaped(NSArray* strings);
     _changeTracker = nil;
     
     if (error) {
-        if (CBLIsOfflineError(error))
-            [self goOffline];
-        else if (!self.error)
+        if (CBLIsOfflineError(error) && continous && _caughtUp) {
+            // The replicator will be in the idle state and will
+            // retry to work after a certain delay.
+            [self retryAfterDelay];
+        }
+
+        if (!self.error)
             self.error = error;
     }
     
